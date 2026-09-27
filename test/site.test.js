@@ -1,0 +1,12 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+process.env.NODE_ENV='test'; process.env.DEPLOYMENT_ENV='staging';
+const {server}=await import('../server.js');
+await new Promise(resolve=>server.listen(0,resolve));
+const base=`http://127.0.0.1:${server.address().port}`;
+test.after(()=>server.close());
+test('home includes core facts and staging safeguards',async()=>{const r=await fetch(base+'/');const text=await r.text();assert.equal(r.status,200);assert.equal(r.headers.get('x-robots-tag'),'noindex, nofollow');assert.match(text,/6kW/);assert.match(text,/S9 3WP/);assert.match(text,/canonical/)});
+test('service route has Service structured data',async()=>{const r=await fetch(base+'/laser-cutting/');const text=await r.text();assert.match(text,/"@type":"Service"/);assert.match(text,/6kW fibre laser/)});
+test('robots blocks staging and admin requires authentication',async()=>{assert.match(await (await fetch(base+'/robots.txt')).text(),/Disallow: \//);assert.equal((await fetch(base+'/admin/')).status,401)});
+test('RFQ rejects incomplete data and accepts valid enquiry',async()=>{let r=await fetch(base+'/api/enquiries',{method:'POST',headers:{'content-type':'application/json'},body:'{}'});assert.equal(r.status,422);r=await fetch(base+'/api/enquiries',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name:'Test Buyer',company:'Test Co',email:'buyer@example.com',service:'laser-cutting',description:'Test requirement',consent:true,files:[]})});assert.equal(r.status,201);assert.match((await r.json()).reference,/^PF-\d{4}-\d{6}$/)});
+test('unknown route returns branded 404',async()=>assert.equal((await fetch(base+'/missing/')).status,404));

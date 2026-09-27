@@ -1,0 +1,13 @@
+{
+  "name": "parkway-fabrications-platform",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "NODE_ENV=development node --watch server.js",
+    "start": "NODE_ENV=production node server.js",
+    "test": "node --test",
+    "check": "node --check server.js && node --check public/app.js"
+  },
+  "engines": { "node": ">=22" }
+}
